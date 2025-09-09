@@ -1,0 +1,1418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Utility Infrastructure Map</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+          crossorigin=""/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+        
+        #map {
+            position: absolute;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            z-index: 1;
+        }
+        
+        .loading-indicator {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: white;
+            padding: 10px 15px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            z-index: 1000;
+            display: none;
+        }
+        
+        .message-box {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: #ff6b6b;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .message-box.show {
+            opacity: 1;
+        }
+        
+        .zoom-level-info {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            z-index: 1000;
+            font-size: 12px;
+        }
+        
+        .layer-control-panel {
+            position: fixed;
+            bottom: 60px;
+            right: 15px;
+            width: 320px;
+            max-height: 80vh;
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+            padding: 1.5rem;
+            transform: translateX(120%);
+            transition: transform 0.3s ease-in-out;
+            overflow-y: auto;
+            z-index: 1001;
+        }
+        .layer-control-panel.show {
+            transform: translateX(0);
+        }
+        .layer-icon-button {
+            position: fixed;
+            bottom: 15px;
+            right: 15px;
+            width: 48px;
+            height: 48px;
+            background-color: #2563eb;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.25rem;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+            transition: transform 0.2s ease-in-out;
+            z-index: 1000;
+        }
+
+        .layer-icon-button:hover {
+            transform: scale(1.05);
+        }
+
+        
+        #search-container {
+            position: absolute;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            padding: 15px;
+            top: 75px;
+            left: 10px;
+            width: 300px;
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+        
+        #search-container.collapsed {
+            width: 40px;
+            height: 40px;
+            padding: 0;
+            overflow: hidden;
+        }
+        
+        #search-container.collapsed #search-wrapper,
+        #search-container.collapsed #search-results,
+        #search-container.collapsed #search-info,
+        #search-container.collapsed h3 {
+            display: none;
+        }
+        
+        .search-toggle {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: none;
+            border: none;
+            font-size: 16px;
+            cursor: pointer;
+            color: #6b7280;
+            z-index: 1001;
+        }
+        
+        .text-lg {
+            font-size: 1.125rem;
+        }
+        
+        .font-bold {
+            font-weight: 700;
+        }
+        
+        .mb-2 {
+            margin-bottom: 0.5rem;
+        }
+        
+        .mr-2 {
+            margin-right: 0.5rem;
+        }
+        
+        #search-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+            margin-top: 10px;
+        }
+        
+        #search-input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 20px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+        
+        #search-input:focus {
+            outline: none;
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+        
+        #search-clear-button {
+            position: absolute;
+            right: 10px;
+            cursor: pointer;
+            color: #6b7280;
+            display: none;
+            background: #f3f4f6;
+            border-radius: 50%;
+            width: 22px;
+            height: 22px;
+            text-align: center;
+            line-height: 22px;
+            font-size: 12px;
+        }
+        
+        #search-results {
+            margin-top: 10px;
+            max-height: 200px;
+            overflow-y: auto;
+            display: none;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+        }
+        
+        .search-result-item {
+            padding: 10px 12px;
+            cursor: pointer;
+            border-bottom: 1px solid #e5e7eb;
+            font-size: 14px;
+            transition: background-color 0.2s;
+        }
+        
+        .search-result-item:hover {
+            background-color: #f3f4f6;
+        }
+        
+        .search-info {
+            margin-top: 8px;
+            font-size: 12px;
+            color: #6b7280;
+        }
+        
+        .text-gray-500 {
+            color: #6b7280;
+        }
+        
+        .layer-category {
+            margin-bottom: 10px;
+        }
+        
+        .category-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            cursor: pointer;
+            font-weight: 600;
+            border-bottom: 1px solid #e5e7eb;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            padding: 8px 12px;
+        }
+        
+        .category-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-in-out;
+            padding-left: 0.5rem;
+        }
+
+        .category-content.expanded {
+            max-height: 500px;
+            padding-top: 0.5rem;
+        }
+        .layer-count, .zoom-note {
+            font-size: 0.75rem;
+            color: #6b7280;
+            margin-left: auto;
+            white-space: nowrap;
+        }
+        .layer-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.5rem;
+            padding: 4px 0;
+        }
+
+        .legend-icon {
+            width: 20px;
+            height: 6px;
+            border-radius: 3px;
+            display: inline-block;
+            margin-right: 0.5rem;
+        }
+        
+        .electric-tower-icon, .power-plant-icon, .substation-icon, .airport-icon, .telecom-icon, 
+        .transformer-icon, .railway-icon, .railway-substation-icon, .asphalt-icon {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            margin-right: 8px;
+            text-align: center;
+            line-height: 12px;
+        }
+        
+        .power-plant-icon {
+            background-color: #10B981;
+            border-radius: 50%;
+        }
+        
+        .substation-icon {
+            background-color: #EF4444;
+            border-radius: 2px;
+        }
+        
+        .telecom-icon {
+            background-color: #3B82F6;
+            border-radius: 50%;
+        }
+        
+        .transformer-icon {
+            background-color: #FFA500;
+            border-radius: 50%;
+        }
+        
+       .railway-icon {
+           position: relative;
+           width: 100px;
+           height: 30px;
+           background-color: #5e5b59;
+           border-radius: 3px;
+           overflow: hidden;
+        }
+
+        .railway-icon::before,
+        .railway-icon::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background-color: #c8c8c8;
+            box-shadow: 0 0 2px rgba(0, 0, 0, 0.3);
+        }
+
+        .railway-icon::before {
+            top: 7px;
+        }
+
+        .railway-icon::after {
+            bottom: 7px;
+        }
+
+        .railway-icon .broken-line {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            transform: translateY(-50%);
+            background: repeating-linear-gradient(
+              to right,
+             #ffd700,
+             #ffd700 10px,
+             transparent 10px,
+             transparent 20px
+            );
+        }
+        
+        .railway-substation-icon {
+            background-color: #ef7408;
+            border-radius: 2px;
+        }
+        
+        .asphalt-icon {
+            background-color: #2c3e50;
+            height: 4px;
+            width: 100%;
+            position: relative;
+
+        }
+        
+        .layer-count {
+            margin-left: auto;
+            font-size: 12px;
+            color: #6b7280;
+            background: #f3f4f6;
+            padding: 2px 6px;
+            border-radius: 10px;
+            min-width: 20px;
+            text-align: center;
+        }
+        
+        .zoom-note {
+            margin-left: auto;
+            font-size: 10px;
+            color: #6b7280;
+            font-style: italic;
+        }
+        
+        .custom-layer-control {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+        
+        .layer-box-toggle {
+            width: 40px;
+            height: 40px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 18px;
+            color: #2563eb;
+        }
+        
+        .layer-box-content {
+            position: absolute;
+            top: 50px;
+            right: 0;
+            width: 200px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            padding: 15px;
+            display: none;
+        }
+        
+        .layer-box-title {
+            font-weight: 600;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #e5e7eb;
+            color: #2563eb;
+        }
+        
+        .base-layer-item {
+            display: flex;
+            align-items: center;
+            padding: 5px 0;
+        }
+        
+        .base-layer-item label {
+            cursor: pointer;
+        }
+        
+        .electric-tower-marker {
+            font-size: 18px;
+            text-align: center;
+            line-height: 24px;
+        }
+        
+        .power-plant-marker, .substation-marker, .transformer-marker, 
+        .railway-substation-marker {
+            text-align: center;
+        }
+        
+        .airport-marker {
+            font-size: 18px;
+            text-align: center;
+            line-height: 24px;
+        }
+        
+        .popup-header {
+            font-weight: bold;
+            margin-bottom: 8px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .feature-properties {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .property-row {
+            display: flex;
+            margin-bottom: 5px;
+            font-size: 13px;
+        }
+        
+        .property-name {
+            font-weight: 600;
+            margin-right: 5px;
+            flex-shrink: 0;
+        }
+        
+        .property-value {
+            word-break: break-word;
+        }
+        
+        /* Ethiopia region styling */
+        .ethiopia-region {
+            fill-opacity: 0.1;
+            stroke: #888888;
+            stroke-width: 2;
+        }
+        
+        .ethiopia-zone {
+            fill-opacity: 0.05;
+            stroke: #AAAAAA;
+            stroke-width: 1.5;
+        }
+        
+        .ethiopia-woreda {
+            fill-opacity: 0.02;
+            stroke: #CCCCCC;
+            stroke-width: 1;
+        }
+        
+        .loading-priority {
+            color: #3B82F6;
+            font-weight: bold;
+        }
+        
+        .safaricom-icon {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            margin-right: 8px;
+            background-color: #0072ce;
+            border-radius: 50%;
+        }
+        
+        /* Improved styling for better visual distinction */
+        .data-layer-icon {
+            color: #10B981;
+        }
+        
+        .base-layer-icon {
+            color: #2563eb;
+        }
+        
+        .category-header:hover {
+            background-color: #e9ecef;
+        }
+        
+        /* Custom zoom controls */
+        .leaflet-bottom.leaflet-right {
+            top: auto;
+            bottom: 120px;
+            right: 15px;
+        }
+        
+        .leaflet-control-zoom {
+            margin-bottom: 80px !important;
+            margin-right: 0 !important;
+            border: none !important;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+            border-radius: 8px !important;
+            overflow: hidden;
+        }
+        
+        .leaflet-control-zoom a {
+            width: 32px !important;
+            height: 32px !important;
+            line-height: 32px !important;
+            font-size: 18px !important;
+            background: white !important;
+            color: #2563eb !important;
+            border: none !important;
+            border-radius: 0 !important;
+        }
+        
+        .leaflet-control-zoom a:first-child {
+            border-bottom: 1px solid #e5e7eb !important;
+        }
+        
+        .leaflet-control-zoom a:hover {
+            background: #f8f9fa !important;
+        }
+        
+        /* Search toggle button */
+        .search-toggle-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: none;
+            border: none;
+            font-size: 16px;
+            cursor: pointer;
+            color: #6b7280;
+            z-index: 1001;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <div id="loading" class="loading-indicator">
+        <i class="fas fa-spinner fa-spin"></i> <span class="loading-priority">Loading priority layers...</span>
+    </div>
+    <div id="message-box" class="message-box"></div>
+    <div id="zoom-level" class="zoom-level-info">Zoom Level: 6</div>
+    
+    <div id="search-container" class="map-control">
+        <button class="search-toggle-btn" id="search-toggle">
+            <i class="fas fa-search"></i>
+        </button>
+        <h3 class="text-lg font-bold mb-2">🔎 Search</h3>
+        <div id="search-wrapper">
+            <input type="text" id="search-input" placeholder="Type to search...">
+            <i id="search-clear-button" class="fa-solid fa-xmark"></i>
+        </div>
+        <div id="search-results"></div>
+        <div id="search-info" class="search-info"></div>
+    </div>
+    
+    <div id="layer-control" class="layer-control-panel">
+        <h3 class="text-lg font-bold mb-2"><i class="fas fa-layer-group data-layer-icon"></i> Data Layers</h3>
+        
+        <div class="layer-category">
+            <div class="category-header" data-category="power">
+                <span><i class="fas fa-bolt mr-2"></i>Electric Power</span>
+                <span class="collapse-icon">▼</span>
+            </div>
+            <div class="category-content" id="power-content">
+                <div class="layer-item">
+                    <input type="checkbox" id="132kv" class="mr-2" checked>
+                    <span class="legend-icon" style="background-color: #2f86ff;width: 20px; height: 6px;"></span>
+                    <label for="132kv">132KV Lines</label>
+                    <span class="layer-count" data-layer="132kv">0</span>
+                </div>
+                <div class="layer-item">
+                    <input type="checkbox" id="230kv" class="mr-2" checked>
+                    <span class="legend-icon" style="background-color: #1242bc;width: 20px; height: 6px;"></span>
+                    <label for="230kv">230KV Lines</label>
+                    <span class="layer-count" data-layer="230kv">0</span>
+                </div>
+                <div class="layer-item">
+                    <input type="checkbox" id="400kv" class="mr-2" checked>
+                    <span class="legend-icon" style="background-color: #0f056e;width: 20px; height: 6px;"></span>
+                    <label for="400kv">400KV Lines</label>
+                    <span class="layer-count" data-layer="400kv">0</span>
+                </div>
+                <div class="layer-item">
+                    <input type="checkbox" id="500kv" class="mr-2" checked>
+                    <span class="legend-icon" style="background-color: #6004f5;width: 20px; height: 6px;"></span>
+                    <label for="500kv">500KV Lines</label>
+                    <span class="layer-count" data-layer="500kv">0</span>
+                </div>
+                <div class="layer-item">
+                    <input type="checkbox" id="Power_Plants" class="mr-2" checked>
+                    <span class="power-plant-icon">  </span>
+                    <label for="Power_Plants"> Power Plants</label>
+                    <span class="layer-count" data-layer="Power_Plants">0</span>
+                </div>
+                <div class="layer-item">
+                    <input type="checkbox" id="Electric_Tower" class="mr-2" checked>
+                    <span class="electric-tower-icon" style="background-image: url('/static/Electric tower.png');"></span>
+                    <label for="Electric_Tower">Electric Towers</label>
+                    <span class="zoom-note">zoom_level(16)</span>
+                    <span class="layer-count" data-layer="Electric_Tower">0</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="layer-category">
+            <div class="category-header" data-category="electric">
+                <span><i class="fas fa-plug mr-2"></i>Electric Utility</span>
+                <span class="collapse-icon">▼</span>
+            </div>
+            <div class="category-content" id="electric-content">
+                <div class="layer-item">
+                    <input type="checkbox" id="mv" class="mr-2" checked>
+                    <span class="legend-icon" style="background-color: #f00606;width: 20px; height: 6px;"></span>
+                    <label for="mv">MV Lines</label>
+                    <span class="zoom-note">zoom_level(16)</span>
+                    <span class="layer-count" data-layer="mv">0</span>
+                </div>
+                <div class="layer-item">
+                    <input type="checkbox" id="Transformer" class="mr-2" checked>
+                    <span class="transformer-icon" style="background-image: url('/static/transformer.png');"> </span>
+                    <label for="Transformer"> Transformers</label>
+                    <span class="zoom-note">zoom_level(16)</span>
+                    <span class="layer-count" data-layer="Transformer">0</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="layer-category">
+            <div class="category-header" data-category="transport">
+                <span><i class="fas fa-road mr-2"></i>Transport</span>
+                <span class="collapse-icon">▼</span>
+            </div>
+            <div class="category-content" id="transport-content">
+                <div class="layer-item">
+                    <input type="checkbox" id="airports" class="mr-2" checked>
+                    <span class="airport-icon" style="background-image: url('/static/Airports.png');"></span>
+                    <label for="airports">Airports</label>
+                    <span class="layer-count" data-layer="airports">0</span>
+                </div>
+                
+                <div class="layer-item">
+                    <input type="checkbox" id="roads" class="mr-2" checked>
+                    <span class="legend-icon" style="background-color: #3c363c;width: 20px; height: 6px;"></span>
+                    <label for="roads">Express Roads</label>
+                    <span class="layer-count" data-layer="roads">0</span>
+                </div>
+                <div class="layer-item">
+                    <input type="checkbox" id="Asphalt" class="mr-2" checked>
+                    <span class="legend-icon" style="background-color: #121212;width: 20px; height: 6px;"></span>
+                    <label for="Asphalt">Asphalt Roads</label>
+                    <span class="zoom-note">zoom_level(14)</span>
+                    <span class="layer-count" data-layer="Asphalt">0</span>
+                </div>
+                <div class="layer-item">
+                    <input type="checkbox" id="Railway" class="mr-2" checked>
+                    <span class="legend-icon" style="background-color: #5e5b59;width: 20px; height: 6px;"></span>
+                    <label for="Railway">Railway Lines</label>
+                    <span class="layer-count" data-layer="Railway">0</span>
+                </div>
+                <div class="layer-item">
+                    <input type="checkbox" id="Sub_Station" class="mr-2" checked>
+                    <span class="substation-icon" style="background-image: url('/static/Electric substation.png');"> </span>
+                    <label for="Sub_Station"> Railway Sub Stations</label>
+                    <span class="zoom-note">zoom_level(10)</span>
+                    <span class="layer-count" data-layer="Sub_Station">0</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="layer-category">
+            <div class="category-header" data-category="other">
+                <span><i class="fas fa-tower-cell mr-2"></i>Tele communication</span>
+                <span class="collapse-icon">▼</span>
+            </div>
+            <div class="category-content" id="other-content">
+                <div class="layer-item">
+                    <input type="checkbox" id="telecom" class="mr-2" checked>
+                    <span class="telecom-icon" style="background-image: url('/static/Tele tower.png');"></span>
+                    <label for="telecom">Ethio telecom Towers</label>
+                    <span class="zoom-note">zoom_level(16)</span>
+                    <span class="layer-count" data-layer="telecom">0</span>
+                </div>
+                <div class="layer-item">
+                    <input type="checkbox" id="Safaricom" class="mr-2" checked>
+                    <span class="safaricom-icon"></span>
+                    <label for="Safaricom">Safari telecom Towers</label>
+                    <span class="zoom-note">zoom_level(10)</span>
+                    <span class="layer-count" data-layer="Safaricom">0</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="layer-category">
+            <div class="category-header" data-category="ethiopia">
+                <span><i class="fas fa-map mr-2"></i>Ethiopia Boundaries</span>
+                <span class="collapse-icon">▼</span>
+            </div>
+           <div class="category-content" id="ethiopia-content">
+                <div class="layer-item">
+                    <input type="checkbox" id="ethiopia_regions" class="mr-2" checked>
+                    <span class="legend-icon" style="background-color: #080202;"></span>
+                    <label for="ethiopia_regions">Regions (ADM1)</label>
+                    <span class="layer-count" data-layer="ethiopia_regions">0</span>
+                </div>
+                <div class="layer-item">
+                    <input type="checkbox" id="ethiopia_zones" class="mr-2" checked>
+                    <span class="legend-icon" style="background-color: #393737;"></span>
+                    <label for="ethiopia_zones">Zones (ADM2)</label>
+                    <span class="zoom-note">zoom_level(6)</span>
+                    <span class="layer-count" data-layer="ethiopia_zones">0</span>
+                </div>
+                <div class="layer-item">
+                    <input type="checkbox" id="ethiopia_woredas" class="mr-2" checked>
+                    <span class="legend-icon" style="background-color: #702929;"></span>
+                    <label for="ethiopia_woredas">Woredas (ADM3)</label>
+                    <span class="zoom-note">zoom_level(8)</span>
+                    <span class="layer-count" data-layer="ethiopia_woredas">0</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Layer control button -->
+    <div class="layer-icon-button" id="layer-control-button">
+        <i class="fas fa-layer-group"></i>
+    </div>
+    
+    <!-- Custom layer control box -->
+    <div class="custom-layer-control">
+        <div class="layer-box-toggle" id="base-layer-toggle">
+            <i class="fas fa-map base-layer-icon"></i>
+        </div>
+        <div class="layer-box-content" id="base-layer-content">
+            <div class="layer-box-title"><i class="fas fa-globe base-layer-icon"></i> Base Maps</div>
+            <div class="base-layer-item">
+                <input type="radio" name="baseMap" id="openStreetMap" class="mr-2" checked>
+                <label for="openStreetMap">OpenStreetMap</label>
+            </div>
+            <div class="base-layer-item">
+                <input type="radio" name="baseMap" id="worldStreetMap" class="mr-2">
+                <label for="worldStreetMap">World Street Map</label>
+            </div>
+            <div class="base-layer-item">
+                <input type="radio" name="baseMap" id="satelliteMap" class="mr-2">
+                <label for="satelliteMap">Satellite</label>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+            crossorigin="">
+    </script>
+    
+    <script>
+        // Set the base URL for your Flask API
+        const API_URL = 'http://localhost:5000/api';
+
+        // Initialize map
+        const map = L.map('map').setView([9.145, 40.4897], 6);
+        const loadingIndicator = document.getElementById('loading');
+        const searchInfo = document.getElementById('search-info');
+        const zoomLevelInfo = document.getElementById('zoom-level');
+        let currentSearchMarker = null;
+        const mapLayers = {};
+        
+        // Define zoom thresholds for different layers
+        const ZOOM_THRESHOLDS = {
+            'Sub_Station': 10,
+            'Transformer': 16,    
+            'mv': 16,          
+            'telecom': 16,        
+            'Railway_Substation': 0, 
+            'Railway': 0,
+            '132kv': 8,
+            '230kv': 8,
+            '400kv': 8,
+            '500kv': 8,
+            'Power_Plants': 8, 
+            'Asphalt': 14,       
+            'ethiopia_regions': 0,  
+            'ethiopia_zones': 8,    
+            'ethiopia_woredas': 10,
+            'Safaricom': 10
+        };
+        
+        // Define the order in which layers should be displayed (from bottom to top)
+        const LAYER_DISPLAY_ORDER = [
+            'ethiopia_regions',
+            'airports',
+            'roads',
+            'ethiopia_woredas',
+            'ethiopia_zones',
+            'Asphalt',
+            'Railway',
+            '132kv',
+            '230kv',
+            '400kv',
+            '500kv',
+            'Power_Plants',
+            'Sub_Station',
+            'Railway_Substation',
+            'telecom',
+            'Safaricom',
+            'mv',          
+            'Transformer'
+            
+        ];
+
+        // Define priority layers that should load first
+        const PRIORITY_LAYERS = [
+            'ethiopia_regions',
+            'airports',
+            'Power_Plants',
+            'roads',
+            '132kv',
+            '230kv',
+            '400kv',
+            '500kv'
+        ];
+
+        // Simple authFetch implementation (just a wrapper for fetch)
+        function authFetch(url, options = {}) {
+            return fetch(url, options);
+        }
+
+        // Show/hide loading indicator
+        function showLoading(message = 'Loading map data...') {
+            loadingIndicator.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${message}`;
+            loadingIndicator.style.display = 'block';
+        }
+        
+        function hideLoading() {
+            loadingIndicator.style.display = 'none';
+        }
+        
+        function showMessageBox(message) {
+            const msgBox = document.getElementById('message-box');
+            msgBox.textContent = message;
+            msgBox.classList.add('show');
+            setTimeout(() => {
+                msgBox.classList.remove('show');
+            }, 5000);
+        }
+
+        function updateSearchInfo(message) {
+            searchInfo.textContent = message;
+        }
+        
+        function updateZoomLevelInfo() {
+            const zoom = map.getZoom();
+            zoomLevelInfo.textContent = `Zoom Level: ${zoom}`;
+        }
+
+        // Define base maps
+        const baseMaps = {
+            "OpenStreetMap": L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                maxZoom: 19
+            }),
+            "World Street Map": L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+                attribution: 'Tiles &copy; Esri &mdash; Source: Esri, DeLorme, NAVTEQ, TomTom, Intermap, iPC, USGS, FAO, NPS, NRCAN, GeoBase, Kadaster NL, Ordnance Survey, Esri Japan, METI, Esri China (Hong Kong), and the GIS User Community',
+                maxZoom: 19
+            }),
+            "Satellite": L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
+                maxZoom: 19
+            })
+        };
+        
+        // Add default base map
+        baseMaps["OpenStreetMap"].addTo(map);
+        
+        // Set up base map switching
+        document.querySelectorAll('input[name="baseMap"]').forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                const mapType = e.target.id;
+                // Remove all current base layers
+                for (const key in baseMaps) {
+                    if (map.hasLayer(baseMaps[key])) {
+                        map.removeLayer(baseMaps[key]);
+                    }
+                }
+                
+                // Add the selected base layer
+                switch(mapType) {
+                    case 'openStreetMap':
+                        baseMaps["OpenStreetMap"].addTo(map);
+                        break;
+                    case 'worldStreetMap':
+                        baseMaps["World Street Map"].addTo(map);
+                        break;
+                    case 'satelliteMap':
+                        baseMaps["Satellite"].addTo(map);
+                        break;
+                }
+            });
+        });
+
+        // Create overlay layers object
+        const overlayMaps = {};
+        
+        // Function to get the PNG filename for specific layers
+        function getIconFilename(layerId) {
+            const filenames = {
+                'Sub_Station': 'Electric substation.png',
+                'Transformer': 'transformer.png',
+                'airports': 'Airports.png',
+                'telecom': 'Tele tower.png',
+                'Safaricom': 'safaricom_icon.png'
+            };
+            return filenames[layerId];
+        }
+
+        // Function to create appropriate icons for each layer type
+        function createLayerIcon(layerId, feature) {
+            // Use PNG icons for specified layers
+            if (['Sub_Station', 'Transformer', 'airports', 'telecom', 'Safaricom'].includes(layerId)) {
+                const filename = getIconFilename(layerId);
+                if (filename) {
+                    return L.icon({
+                        iconUrl: `/static/${filename}`,
+                        iconSize: [24, 24],
+                        iconAnchor: [12, 12]
+                    });
+                }
+            } else if (layerId === 'Power_Plants') {
+                return L.divIcon({
+                    className: 'power-plant-marker',
+                    html: '<div class="power-plant-icon"></div>',
+                    iconSize: [24, 24],
+                    iconAnchor: [12, 12]
+                });
+            } else if (layerId === 'Railway_Substation') {
+                return L.divIcon({
+                    className: 'railway-substation-marker',
+                    html: '<div class="railway-substation-icon"></div>',
+                    iconSize: [24, 24],
+                    iconAnchor: [12, 12]
+                });
+            }
+            
+            // Default icon for other point features
+            return L.divIcon({
+                className: 'default-marker',
+                html: '<div style="background-color: #3388ff; width: 12px; height: 12px; border-radius: 50%; border: 2px solid white;"></div>',
+                iconSize: [16, 16],
+                iconAnchor: [8, 8]
+            });
+        }
+
+        // Function to load a single layer
+        async function loadLayer(layerId, layerInfo) {
+            try {
+                if (!layerInfo.geojson) {
+                    console.warn(`No GeoJSON specified for layer ${layerId}`);
+                    return;
+                }
+
+                const geojsonResponse = await authFetch(`${API_URL}/geojson/${layerInfo.geojson}`);
+                if (!geojsonResponse.ok) {
+                    console.error(`Failed to fetch GeoJSON for ${layerId}:`, geojsonResponse.statusText);
+                    return;
+                }
+                
+                const geojsonData = await geojsonResponse.json();
+                console.log(`Loaded ${layerId} with ${geojsonData.features ? geojsonData.features.length : 0} features`);
+                
+                if (!geojsonData.features || geojsonData.features.length === 0) {
+                    console.warn(`No features found in GeoJSON for ${layerId}`);
+                    return;
+                }
+                
+                // Create the Leaflet GeoJSON layer with appropriate styling for Ethiopia layers
+                const layer = L.geoJSON(geojsonData, {
+                    style: feature => {
+                        // Special styling for Ethiopia administrative boundaries
+                        if (layerId === 'ethiopia_zones') {
+                            return {
+                                color: '#AAAAAA',
+                                weight: 1.5,
+                                opacity: 0.7,
+                                className: 'ethiopia-zone'
+                            };
+                        } else if (layerId === 'ethiopia_woredas') {
+                            return {
+                                color: '#CCCCCC',
+                                weight: 1,
+                                opacity: 0.6,
+                                className: 'ethiopia-woreda'
+                            };
+                        } else {
+                            // Default styling for other layers
+                            return {
+                                color: getLayerColor(layerId),
+                                weight: getLayerWeight(layerId),
+                                opacity: 0.8,
+                                fillOpacity: layerId.startsWith('ethiopia') ? 0.1 : 0.8,
+                                fillColor: layerId.startsWith('ethiopia') ? getLayerColor(layerId) : 'transparent'
+                            };
+                        }
+                    },
+                    pointToLayer: (feature, latlng) => {
+                        // Use our custom icon function
+                        const icon = createLayerIcon(layerId, feature);
+                        return L.marker(latlng, { icon: icon, riseOnHover: true });
+                    },
+                    onEachFeature: (feature, layer) => {
+                        layer.bindPopup(`<div class="popup-header">${layerInfo.name}</div>${formatProperties(feature.properties)}`);
+                    }
+                });
+                
+                mapLayers[layerId] = layer;
+                
+                // Add to overlayMaps for all layers including Ethiopia layers
+                overlayMaps[layerInfo.name] = layer;
+
+                // Update layer counts on the UI for all layers
+                const countElement = document.querySelector(`.layer-count[data-layer="${layerId}"]`);
+                if (countElement) {
+                    countElement.textContent = geojsonData.features.length;
+                }
+                
+                // Add to map immediately if it should be visible
+                const isCheckboxChecked = document.getElementById(layerId)?.checked || false;
+                const zoomThreshold = ZOOM_THRESHOLDS[layerId] || 0;
+                const shouldBeVisible = isCheckboxChecked && map.getZoom() >= zoomThreshold;
+                
+                if (shouldBeVisible) {
+                    map.addLayer(layer);
+                }
+                
+                return true;
+            } catch (error) {
+                console.error(`Error loading GeoJSON for layer ${layerId}:`, error);
+                showMessageBox(`Failed to load data for ${layerInfo.name}`);
+                return false;
+            }
+        }
+
+        // This function fetches the list of layers from the backend and loads the GeoJSON data for each
+        async function loadLayersFromBackend() {
+            showLoading('Loading priority layers...');
+            try {
+                // Fetch the layer metadata from the /api/layers endpoint
+                const layersResponse = await authFetch(`${API_URL}/layers`);
+                if (!layersResponse.ok) {
+                    throw new Error(`HTTP error! status: ${layersResponse.status}`);
+                }
+                
+                const layersData = await layersResponse.json();
+                
+                // Clear any existing layers
+                Object.values(mapLayers).forEach(layer => map.removeLayer(layer));
+                for (const key in mapLayers) { delete mapLayers[key]; }
+                
+                // Clear overlayMaps
+                for (const key in overlayMaps) { delete overlayMaps[key]; }
+                
+                // Load priority layers first
+                for (const layerId of PRIORITY_LAYERS) {
+                    const layerInfo = layersData[layerId];
+                    if (!layerInfo) continue;
+                    
+                    console.log("Loading priority layer:", layerId);
+                    await loadLayer(layerId, layerInfo);
+                }
+                
+                // Hide loading indicator after priority layers are loaded
+                hideLoading();
+                
+                // Load remaining layers in the background
+                const remainingLayers = LAYER_DISPLAY_ORDER.filter(layerId => 
+                    !PRIORITY_LAYERS.includes(layerId) && layersData[layerId]
+                );
+                
+                for (const layerId of remainingLayers) {
+                    const layerInfo = layersData[layerId];
+                    console.log("Loading background layer:", layerId);
+                    loadLayer(layerId, layerInfo); // Don't await - load in background
+                }
+                
+                updateLayersVisibilityByZoom();
+                updateSearchInfo('Search data layer.');
+
+            } catch (error) {
+                console.error("Error fetching layers metadata:", error);
+                hideLoading();
+                showMessageBox("Failed to connect to the backend. Please ensure the Flask server is running.");
+            }
+        }
+        
+        function getLayerColor(layerId) {
+            const colors = {
+                '132kv': '#2f86ff', '230kv': '#1242bc', '400kv': '#0f056e', '500kv': '#6004f5',
+                'mv': '#f00606', 
+                'telecom': '#3B82F6', 'roads': '#3c363c', 'Asphalt': '#121212',
+                'Power_Plants': '#10B981', 'Sub_Station': '#EF4444',
+                'Transformer': '#FFA500', 'Railway': '#5e5b59', 'Railway_Substation': '#800080',
+                'airports': '#F59E0B',
+                'ethiopia_regions': '#080202',
+                'ethiopia_zones': '#393737',
+                'ethiopia_woredas': '#702929',
+                'Safaricom': '#0072ce'
+            };
+            return colors[layerId] || '#6b7280';
+        }
+        
+        function getLayerWeight(layerId) {
+            const weights = {
+                '132kv': 4, '230kv': 4, '400kv': 4, '500kv': 4,
+                'mv': 2,
+                'telecom': 3, 'roads': 4, 'Asphalt': 3,
+                'Railway': 4,
+                'transformer': 2,
+                'ethiopia_regions': 2,
+                'ethiopia_zones': 1.5,
+                'ethiopia_woredas': 1
+            };
+            return weights[layerId] || 4;
+        }
+
+        // Toggle visibility of layers based on checkbox state and zoom level
+        function updateLayersVisibilityByZoom() {
+            const currentZoom = map.getZoom();
+            updateZoomLevelInfo();
+            
+            Object.keys(mapLayers).forEach(layerId => {
+                const layer = mapLayers[layerId];
+                if (!layer) return;
+
+                const isCheckboxChecked = document.getElementById(layerId)?.checked || false;
+                const zoomThreshold = ZOOM_THRESHOLDS[layerId] || 0;
+                const shouldBeVisible = isCheckboxChecked && currentZoom >= zoomThreshold;
+
+                if (shouldBeVisible) {
+                    if (!map.hasLayer(layer)) {
+                        map.addLayer(layer);
+                    }
+                } else {
+                    if (map.hasLayer(layer)) {
+                        map.removeLayer(layer);
+                    }
+                }
+            });
+        }
+        
+        function formatProperties(properties) {
+            if (!properties) return '<div class="property-row"><div class="property-value">No properties available.</div></div>';
+            let html = '<div class="feature-properties">' 
+            for (const [key, value] of Object.entries(properties)) {
+                html += `<div class="property-row"><div class="property-name">${key}:</div><div class="property-value">${value !== null ? value : 'N/A'}</div></div>`;
+            }
+            html += '</div>';
+            return html;
+        }
+        
+        // Event listeners for layer checkboxes
+        document.querySelectorAll('.layer-item input[type="checkbox"]').forEach(checkbox => {
+            checkbox.addEventListener('change', () => {
+                updateLayersVisibilityByZoom();
+            });
+        });
+        
+        // Event listeners for category headers to collapse/expand
+        document.querySelectorAll('.category-header').forEach(header => {
+            header.addEventListener('click', () => {
+                const content = header.nextElementSibling;
+                const icon = header.querySelector('.collapse-icon');
+                if (content.classList.contains('expanded')) {
+                    content.classList.remove('expanded');
+                    icon.textContent = '▼';
+                } else {
+                    content.classList.add('expanded');
+                    icon.textContent = '▲';
+                }
+            });
+        });
+
+        // Search functionality
+        const searchInput = document.getElementById('search-input');
+        const searchResults = document.getElementById('search-results');
+        const searchClearButton = document.getElementById('search-clear-button');
+        const searchContainer = document.getElementById('search-container');
+        const searchToggle = document.getElementById('search-toggle');
+        let searchTimeout;
+        
+        // Toggle search container
+        searchToggle.addEventListener('click', function() {
+            searchContainer.classList.toggle('collapsed');
+            if (searchContainer.classList.contains('collapsed')) {
+                searchToggle.innerHTML = '<i class="fas fa-search"></i>';
+            } else {
+                searchToggle.innerHTML = '<i class="fas fa-times"></i>';
+                searchInput.focus();
+            }
+        });
+        
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            const query = this.value.trim();
+            searchClearButton.style.display = query.length > 0 ? 'block' : 'none';
+
+            if (query.length < 2) {
+                searchResults.style.display = 'none';
+                updateSearchInfo('Enter at least 2 characters to search');
+                if (currentSearchMarker) {
+                    map.removeLayer(currentSearchMarker);
+                    currentSearchMarker = null;
+                }
+                return;
+            }
+            
+            searchTimeout = setTimeout(() => {
+                performServerSideSearch(query);
+            }, 300);
+        });
+
+        async function performServerSideSearch(query) {
+            showLoading('Searching database...');
+            updateSearchInfo(`Searching for "${query}"...`);
+            
+            try {
+                const searchResponse = await authFetch(`${API_URL}/search?q=${encodeURIComponent(query)}`);
+                const data = await searchResponse.json();
+                
+                if (data.error) {
+                    console.error("Search Error:", data.error);
+                    showMessageBox("Search failed. Check the console for details.");
+                    updateSearchInfo('Search failed.');
+                    displaySearchResults([]);
+                } else {
+                    updateSearchInfo(`Found ${data.results.length} results`);
+                    displaySearchResults(data.results);
+                }
+            } catch (error) {
+                console.error("Network or search error:", error);
+                showMessageBox("Search failed. Please ensure the Flask server is running.");
+                updateSearchInfo('Search failed. Server connection error.');
+                displaySearchResults([]);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        function displaySearchResults(results) {
+            searchResults.innerHTML = '';
+            
+            if (results.length === 0) {
+                searchResults.innerHTML = '<div class="search-result-item">No results found</div>';
+            } else {
+                const limitedResults = results.slice(0, 20);
+                
+                limitedResults.forEach(result => {
+                    let displayText = 'Unnamed feature';
+                    const possibleNames = ['name', 'Name', 'NAME', 'id', 'OBJECTID'];
+                    
+                    for (const prop of possibleNames) {
+                        if (result.properties && result.properties[prop]) {
+                            displayText = result.properties[prop];
+                            break;
+                        }
+                    }
+                    
+                    const div = document.createElement('div');
+                    div.className = 'search-result-item';
+                    div.innerHTML = `<strong>${displayText}</strong><br><small class="text-gray-500">Type: ${result.type}</small>`;
+                    div.addEventListener('click', () => {
+                        zoomToResult(result);
+                        searchResults.style.display = 'none';
+                    });
+                    searchResults.appendChild(div);
+                });
+                
+                if (results.length > 20) {
+                    const moreResults = document.createElement('div');
+                    moreResults.className = 'search-result-item text-gray-500';
+                    moreResults.textContent = `... and ${results.length - 20} more results`;
+                    searchResults.appendChild(moreResults);
+                }
+            }
+            searchResults.style.display = 'block';
+        }
+
+        searchClearButton.addEventListener('click', function() {
+            searchInput.value = '';
+            searchResults.innerHTML = '';
+            searchResults.style.display = 'none';
+            searchClearButton.style.display = 'none';
+            updateSearchInfo('Search cleared');
+            if (currentSearchMarker) {
+                map.removeLayer(currentSearchMarker);
+                currentSearchMarker = null;
+            }
+        });
+        
+        function zoomToResult(result) {
+            if (currentSearchMarker) {
+                map.removeLayer(currentSearchMarker);
+            }
+            
+            const featureLayer = L.geoJSON(result.geojson, {
+                pointToLayer: (feature, latlng) => L.circleMarker(latlng, {
+                    radius: 8,
+                    fillColor: "#ff0000",
+                    color: "#ffffff",
+                    weight: 2,
+                    opacity: 1,
+                    fillOpacity: 0.8
+                }),
+                style: () => ({
+                    color: "#ff0000",
+                    weight: 4,
+                    opacity: 0.8,
+                    fillOpacity: 0.1
+                })
+            });
+            
+            currentSearchMarker = featureLayer;
+            map.addLayer(featureLayer);
+            
+            // Zoom to the bounds of the result
+            const bounds = featureLayer.getBounds();
+            if (bounds.isValid()) {
+                map.fitBounds(bounds, { padding: [50, 50] });
+            }
+            
+            // Open popup with result information
+            featureLayer.eachLayer(layer => {
+                if (layer.getPopup) {
+                    layer.openPopup();
+                }
+            });
+        }
+
+        // Toggle base layer control box
+        document.getElementById('base-layer-toggle').addEventListener('click', function() {
+            const content = document.getElementById('base-layer-content');
+            content.style.display = content.style.display === 'block' ? 'none' : 'block';
+        });
+
+        // Toggle layer control panel
+        document.getElementById('layer-control-button').addEventListener('click', function() {
+            const panel = document.getElementById('layer-control');
+            panel.classList.toggle('show');
+        });
+
+        // Initialize the map when it loads
+        map.whenReady(() => {
+            loadLayersFromBackend();
+            
+            // Update layer visibility when zoom changes
+            map.on('zoomend', updateLayersVisibilityByZoom);
+            
+            // Update zoom level info
+            map.on('zoom', updateZoomLevelInfo);
+            updateZoomLevelInfo();
+            
+            // Initialize category expansion
+            document.querySelectorAll('.category-content').forEach(content => {
+                content.classList.remove('expanded');
+            });
+            
+            // Move zoom controls to bottom right
+            const zoomControl = document.querySelector('.leaflet-control-zoom');
+            if (zoomControl) {
+                zoomControl.style.marginBottom = '80px';
+                zoomControl.style.marginRight = '0';
+            }
+        });
+    </script>
+</body>
+</html>

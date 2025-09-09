@@ -3,53 +3,141 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Viewer Dashboard - Utility Map</title>
+    <title>Integrated Infrastructure Data Visualization</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            line-height: 1.6;
+        }
+        
+        
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background: rgba(70, 19, 133, 0.7);
+            backdrop-filter: blur(10px);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(21, 21, 21, 0.2);
+        }
+        
+        .navbar-brand {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: white;
+            display: flex;
+            align-items: center;
+        }
+        
+        .navbar-brand i {
+            margin-right: 10px;
+        }
+        
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+        }
+        
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+        
+        .nav-links a:hover {
+            color: #a3bffa;
+        }
+        
+        /* Main content */
+        .main-content {
+            padding-top: 80px;
             min-height: 100vh;
+        }
+        
+        .section {
+            padding: 4rem 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        /* Dashboard section */
+        .dashboard-section {
             display: flex;
             align-items: center;
             justify-content: center;
-            margin: 0;
-            padding: 20px;
-            text-align: center;
-            color: white;
+            min-height: 100vh;
+            padding: 2rem;
         }
+        
         .dashboard-container {
             background: rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(10px);
-            padding: 2.5rem;
+            padding: 3rem;
             border-radius: 15px;
             box-shadow: 0 8px 32px rgba(0,0,0,0.3);
-            max-width: 600px;
+            max-width: 1000px;
             width: 100%;
+            text-align: center;
         }
+        
         .logo-container {
-            margin: 0 auto 1.5rem;
             display: flex;
             justify-content: center;
-            max-width: 100%;
+            gap: 2rem;
+            margin: 0 auto 2rem;
+            flex-wrap: wrap;
         }
+        
         .logo {
             max-width: 100%;
             height: auto;
-            max-height: 120px;
+            max-height: 150px;
             object-fit: contain;
             border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
         }
+        
         h1 {
             margin: 1rem 0;
-            font-size: 2.2rem;
+            font-size: 2.5rem;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
         }
+        
+        h2 {
+            font-size: 2rem;
+            margin-bottom: 1.5rem;
+            text-align: center;
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
+        }
+        
+        h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: #e6e6e6;
+        }
+        
         p {
             margin-bottom: 1.5rem;
             font-size: 1.1rem;
             opacity: 0.9;
-            line-height: 1.5;
+            line-height: 1.6;
         }
+        
         .btn {
             padding: 1rem 2rem;
             background: white;
@@ -61,91 +149,331 @@
             transition: all 0.3s ease;
             display: inline-block;
             margin: 0.5rem;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
         }
+        
         .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
         }
+        
         .user-info {
             margin-bottom: 2rem;
         }
+        
         .button-container {
             display: flex;
             flex-direction: column;
             align-items: center;
-            margin-top: 1.5rem;
+            margin-top: 2rem;
         }
+        
         .logout-link {
             color: white;
             opacity: 0.8;
             text-decoration: none;
             margin-top: 1.5rem;
             display: inline-block;
+            transition: opacity 0.3s;
         }
+        
         .logout-link:hover {
             opacity: 1;
         }
-
-        /* Responsive adjustments */
+        
+        /* Project description section */
+        .project-description {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 5rem 2rem;
+        }
+        
+        .description-content {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+        
+        .feature-card {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 2rem;
+            border-radius: 10px;
+            text-align: center;
+            transition: transform 0.3s;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .feature-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            color: #a3bffa;
+        }
+        
+        /* About us section */
+        .about-section {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 5rem 2rem;
+        }
+        
+        .team-members {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+        
+        .team-member {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 2rem;
+            border-radius: 10px;
+            text-align: center;
+        }
+        
+        .member-image {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin: 0 auto 1rem;
+            border: 3px solid white;
+        }
+        
+        /* Footer */
+        footer {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 2rem;
+            text-align: center;
+            margin-top: 2rem;
+        }
+        
+        
         @media (max-width: 768px) {
+            .navbar {
+                padding: 1rem;
+                flex-direction: column;
+                gap: 1rem;
+            }
+            
             .dashboard-container {
                 padding: 2rem;
             }
+            
             h1 {
-                font-size: 1.9rem;
+                font-size: 2rem;
             }
-            .logo {
-                max-height: 100px;
+            
+            h2 {
+                font-size: 1.8rem;
+            }
+        }
+        .logo-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 0 auto 2rem;
+            width: 100%;
+       
+        
+        .logo1, .logo2 {
+            height: auto;
+            max-height: 150px;
+            object-fit: contain;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            flex: 0 0 auto;
+        }
+        
+        .logo1 {
+            max-width: 200px;
+        }
+        
+        .logo2 {
+            max-width: 230px;
+        }
+            
+            .features, .team-members {
+                grid-template-columns: 1fr;
             }
         }
         
         @media (max-width: 480px) {
-            body {
-                padding: 15px;
-            }
             .dashboard-container {
                 padding: 1.5rem;
             }
+            
             h1 {
-                font-size: 1.7rem;
+                font-size: 1.8rem;
             }
+            
+            h2 {
+                font-size: 1.6rem;
+            }
+            
             p {
                 font-size: 1rem;
             }
+            
             .btn {
                 padding: 0.8rem 1.6rem;
                 font-size: 1rem;
             }
+            
             .logo {
-                max-height: 80px;
+                max-height: 100px;
             }
         }
     </style>
 </head>
 <body>
-    <div class="dashboard-container">
-        <!-- Logo Container -->
-        <div class="logo-container">
-            <img src="http://ssgi.gov.et/wp-content/uploads/2023/04/header-logo.jpg" alt="SSGI Logo" class="logo">
+   
+    <nav class="navbar">
+        <div class="navbar-brand">
+            <i class="fas fa-map-marked-alt"></i> Integrated Infrastructure Data Visualization
         </div>
-        
-        <h1>INTEGRATED INFRASTRUCTURE DATA VISUALIZATION</h1>
-        
-        <div class="user-info">
-            <p>Welcome, <strong id="user-name">Viewer</strong>!</p>
-            <p>You have access to view all utility infrastructure data on the map.</p>
+        <div class="nav-links">
+            <a href="#dashboard">Home</a>
+            <a href="#project">Project</a>
+            <a href="#about">About Us</a>
         </div>
+    </nav>
+
+  
+    <div class="main-content">
+       
+        <section id="dashboard" class="dashboard-section">
+            <div class="dashboard-container">
+                <div class="logo-container">
+                    <img src="data:image/png;base64,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" alt="Ethiopia" class="logo1">
+                    <img src="http://ssgi.gov.et/wp-content/uploads/2023/04/header-logo.jpg" alt="SSGI Logo" class="logo2">
+                    
+                </div>
+                
+                <h1>INTEGRATED INFRASTRUCTURE DATA VISUALIZATION</h1>
+                
+                <div class="user-info">
+                    <p>Welcome, <strong id="user-name">Viewer</strong>!</p>
+                    <p>You have access to view all utility infrastructure data on the map.</p>
+                </div>
+                
+                <div class="button-container">
+                    <a href="/map" class="btn">
+                        <i class="fas fa-globe"></i> Access the Map
+                    </a>
+                    
+                    <a href="/logout" class="logout-link">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </a>
+                </div>
+            </div>
+        </section>
+
+       
+        <section id="project" class="section project-description">
+            <div class="description-content">
+                <h2>About the Project</h2>
+                <p>The Ethiopian Integrated Infrastructure Spatial Data Visualization Portal is a national digital platform designed to unify and visualize spatial data from key federal infrastructure organizations and government stakeholders. It provides a centralized, interactive environment where decision-makers, planners, and technical experts can monitor, analyze, and coordinate infrastructure assets and development projects across sectors.
+At the same time, it leverages modern GIS and data visualization technologies to enhance situational awareness, reduce duplication of investments, and support evidence-based decision-making. This makes infrastructure planning more efficient, transparent, and future-oriented, aligning with Ethiopia’s broader digital transformation and sustainable development goals.
+By integrating data from Ethiopian Electric Power, Ethio Telecom, Safaricom Ethiopia, Ethiopian Electric Utility, Ethiopian Airlines, Ethiopian Railway Corporation, Ethiopian Roads Authority, Ethiopian Industry Park Development Corporation, and the Ministry of Urban and Infrastructure, the portal strengthens inter-agency collaboration, policy alignment, and strategic planning.</p>
+               
+                
+                <div class="features">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-bolt"></i>
+                        </div>
+                        <h3>Power Infrastructure</h3>
+                        <p>Visualize power lines, substations, transformers, and power plants across multiple voltage levels with detailed attribute information.</p>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-road"></i>
+                        </div>
+                        <h3>Transport Networks</h3>
+                        <p>Explore road networks, railway lines, airports, and related infrastructure with comprehensive filtering and search capabilities.</p>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-tower-cell"></i>
+                        </div>
+                        <h3>Telecommunications</h3>
+                        <p>Access detailed information about telecom towers and infrastructure from multiple providers across the country.</p>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-map"></i>
+                        </div>
+                        <h3>Administrative Boundaries</h3>
+                        <p>View regional, zonal, and woreda boundaries with the ability to toggle different administrative levels based on zoom level.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fa fa-industry" aria-hidden="true"></i>
+                        </div>
+                        <h3>Ethiopian industriy park devepoment</h3>
+                        <p>Visualize power lines, substations, transformers, and power plants across multiple voltage levels with detailed attribute information.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fa fa-building" aria-hidden="true"></i>
+                        </div>
+                        <h3>Ministry of urban and infrastructure</h3>
+                        <p>Visualize power lines, substations, transformers, and power plants across multiple voltage levels with detailed attribute information.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
         
-        <div class="button-container">
-            <a href="/map" class="btn">
-                <i class="fas fa-globe"></i> Access the Map
-            </a>
-            
-            <a href="/logout" class="logout-link">
-                <i class="fas fa-sign-out-alt"></i> Logout
-            </a>
-        </div>
+        <section id="about" class="section about-section">
+            <div class="description-content">
+                <h2>About Our Team</h2>
+                <p>We are a dedicated team committed to creating innovative solutions for infrastructure management. Our mission is to provide accurate visualizations that support decision-making and infrastructure development planning.</p>
+                
+                <p>Prepared by Space Science and Geospatial Institute 
+Urban Monitoring Center in collaboration with internship students Ayalkibet Admasu (Center Coordinator) Elebetel student 
+Hikma</p>
+                
+                <div class="team-members">
+                    <div class="team-member">
+                        
+                        <h3>Ayalkebet Admasu</h3>
+                        <p>center/Project Coordinator</p>
+                         <p><a href="ayalknesbs@gmail.com" aria-label="Email the team">Ayalknesbs@gmail.com</a></p>
+                    </div>
+                    
+                    <div class="team-member">
+                        <h3>ELBETEL ABADI</h3>
+                        <p> 3rd year Data science student in Debre berhan University</p>
+                        <p><a href="abadielbetel@gmail.com" aria-label="Email the team">Abadielbetel@gmail.com</a></p>
+                    </div>
+                    
+                    <div class="team-member">
+                        
+                        <h3>Hikma Faruk</h3>
+                        <p> 4th year computer science student in Jimma University</p>
+                       <p> <a href="hikmafaruk84@gmail.com@.com" aria-label="Email the team">Hikmafaruk84@gmail.com</a></p>
+
+                    </div>
+                </div>
+            </div>
+        </section>
+       
     </div>
+
+    <footer>
+        <p>Space science and geosoatial inistitute</p>
+    </footer>
 
     <script>
         // Fetch user info on page load
@@ -159,14 +487,26 @@
                 });
                 
             // Handle potential image loading errors
-            const logo = document.querySelector('.logo');
-            if (logo) {
+            const logos = document.querySelectorAll('.logo');
+            logos.forEach(logo => {
                 logo.onerror = function() {
                     console.log('Logo image could not be loaded');
-                    // You could add a fallback image or hide the container
                     this.style.display = 'none';
                 };
-            }
+            });
+            
+        
+            document.querySelectorAll('.nav-links a').forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const targetId = this.getAttribute('href');
+                    const targetSection = document.querySelector(targetId);
+                    window.scrollTo({
+                        top: targetSection.offsetTop - 80,
+                        behavior: 'smooth'
+                    });
+                });
+            });
         });
     </script>
 </body>
